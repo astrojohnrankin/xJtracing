@@ -265,14 +265,6 @@ def simulate_lobster_tube(lobster_tube, material_nk_files_list, d_list, rugosity
     
     rays_maps = dict(map(create_lobster_image_, range(len(reflected_list))))
 
-    #queste righe successive si potrebbero compattare inteliggentemente
-    # if ax_x is not None or ax_y is not None:
-    #     for rays_maps_n in rays_maps:
-    #         for rays_to_plot in rays_maps[rays_maps_n]:
-    #             if ax_x is not None: 
-    #                 plot_rays(ax_x, rays_maps[rays_maps_n][rays_to_plot], -focal_plane, rays_maps[rays_maps_n][rays_to_plot].x0[2])
-    #             if ax_y is not None:
-    #                 plot_rays(ax_y, rays_maps[rays_maps_n][rays_to_plot], -focal_plane, rays_maps[rays_maps_n][rays_to_plot].x0[2])
     if ax_x is not None: 
         ax_x.axhline(focal_plane, color='green', lw=4)
     if ax_y is not None:
@@ -373,7 +365,7 @@ def simulate_an_Angel(off_axis_angle_deg, pa_deg, telescope_pars, rays_function=
     dict_return['x'] = rays_maps['total']['x']
     dict_return['y'] = rays_maps['total']['y']
     dict_return['rays_maps'] = rays_maps
-    dict_return['rays_N_return'] = {_n_refl:{_N_key:rays_maps[_n_refl][_N_key][0] for _N_key in ['N_initial', 'N_final']} for _n_refl in range(telescope_pars['max_reflections']+1)}
+    dict_return['rays_N_return'] = {_n_refl:{_N_key:rays_maps[_n_refl][_N_key].sum() for _N_key in ['N_initial', 'N_final']} for _n_refl in range(telescope_pars['max_reflections']+1)}
     dict_return['hew_dict'] = all_hew_info_from_cross(rays_maps, radius=telescope_pars['radius'])
     dict_return['hew'] = dict_return['hew_dict']['hew']
     dict_return['nrays_initial'] = nrays_initial
@@ -642,6 +634,7 @@ def simulate_a_Schmidt_or_KB(off_axis_angle_deg, pa_deg, telescope_pars_top, tel
     dict_return['y'] = rays_maps['total']['y']
     dict_return['Aeff'] = rays_maps['A_eff']
     dict_return['rays_maps'] = rays_maps
+    dict_return['rays_N_return'] = {_n_refl:{_N_key:rays_maps[_n_refl][_N_key].sum() for _N_key in ['N_initial', 'N_final']} for _n_refl in [0, '1up', '1down', 2, '3+']}
     dict_return['hew_dict'] = all_hew_info_from_cross(rays_maps, radius=telescope_pars_bottom['radius'],
                                   # hew_method='only center')
                                     # hew_method='use cross'

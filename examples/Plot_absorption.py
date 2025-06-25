@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.16.2
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -24,12 +24,12 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 
-# -----------------------------------------
-#TEMPORARY until I create packages
-import sys
-sys.path.append('..')
-sys.path.append('.')
-# -----------------------------------------
+# # -----------------------------------------
+# #TEMPORARY until I create packages
+# import sys
+# sys.path.append('..')
+# sys.path.append('.')
+# # -----------------------------------------
 
 from xJtracing.absorption import generate_refractive_index_function, generate_Fresnel_coefficients, reflection_R_many_layers, multilayers_from_receipt
 
@@ -40,9 +40,10 @@ try:
     datapath = os.path.basename(os.path.dirname(__file__))+'/../xJtracing/data/nk'
 except:
     datapath = '../xJtracing/data/nk'
-# -
 
+# + [markdown] jp-MarkdownHeadingCollapsed=true
 # # Refractive index
+# -
 
 n = generate_refractive_index_function(os.path.join(datapath, 'Au.nk'))
 
@@ -114,6 +115,27 @@ ax.set_yscale('log')
 ax.set_xlabel('Angle [rad]')
 ax.legend()
 
+
+# +
+fig, ax = plt.subplots()
+
+energies = np.linspace(0.1, 8, 1000)
+
+for spessori, materiali, label in zip([[1000], [70, 1000], [25, 1000]],
+                              [[None, os.path.join(datapath, 'Au.nk'), os.path.join(datapath, 'Ni.nk')], 
+                               [None, os.path.join(datapath, 'C.nk'), os.path.join(datapath, 'Au.nk'), os.path.join(datapath, 'Ni.nk')],
+                               [None, os.path.join(datapath, 'Cr.nk'), os.path.join(datapath, 'Au.nk'), os.path.join(datapath, 'Ni.nk')]],
+                                     ['Au', 'C+ Au', 'Cr+ Au']):
+
+    coeffs = reflection_R_many_layers(1.5*np.pi/180, energies, spessori, materiali)
+    R = (np.abs(coeffs.Rs)**2 + np.abs(coeffs.Rp)**2)/2
+    
+    ax.plot(energies, R**2, label=label)
+ax.set_yscale('log')
+ax.set_xlabel('Energy [keV]')
+ax.set_ylabel(f'R$^2$')
+ax.legend()
+# -
 
 # # Multilayer receipt
 

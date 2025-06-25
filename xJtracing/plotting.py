@@ -84,30 +84,41 @@ def plot_rays(ax, rays, z_low, z_up, side='radial'):
     if isinstance(z_up, (float, int)): z_up = np.tile(z_up, rays.survival.shape)
     
     n_rays = rays.survival.shape[0]
-    n_configs = rays.survival.shape[1]
+    try:
+        n_configs = rays.survival.shape[1]
+        configs = range(n_configs)
+    except:
+        n_configs = None
+        configs = [None]
 
     if side in ['x Angel', 'y Angel']:
         n_mirrors = int(np.sqrt(n_configs))
     
-    configs = range(n_configs)
+    
     if side in ['x Angel']:
         configs = configs[:n_mirrors]
     if side in ['y Angel']:
         configs = configs[::n_mirrors]
     
     for config_i in configs:
-        z = np.linspace(z_low[:,config_i], z_up[:,config_i], 3)
-            
-        x_func, y_func = generate_ray_direction_equations(rays.e[:,:,config_i], rays.x0[:,:,config_i])
+        if n_configs is not None:
+            mmm = ...,config_i
+            mmm3d = ...,config_i
+        else:
+            mmm = ...
+            mmm3d = ...
+        z = np.linspace(z_low[mmm], z_up[mmm], 3)
+
+        x_func, y_func = generate_ray_direction_equations(rays.e[mmm3d], rays.x0[mmm3d])
         if side in ['y', 'y Angel']: #If True, the plot is in the yz space instead of xz.
             x_func, y_func = y_func, x_func
 
-        slicing_list = [rays.delete_ray[:,config_i]==0, rays.survival[:,config_i]]
+        slicing_list = [rays.delete_ray[mmm]==0, rays.survival[mmm]]
         if side in ['radial', 'x', 'y']:
-            slicing_list.append(y_func(z_up[:,config_i]) > -1.5)
-            slicing_list.append(y_func(z_up[:,config_i]) < 1.5)
+            slicing_list.append(y_func(z_up[mmm]) > -1.5)
+            slicing_list.append(y_func(z_up[mmm]) < 1.5)
         if side in ['radial']:
-            slicing_list.append(x_func(z_up[:,config_i]) > 0)
+            slicing_list.append(x_func(z_up[mmm]) > 0)
         mask_slice = np.logical_and.reduce(slicing_list)
     
         ax.plot(x_func(z)[:,mask_slice], z[:,mask_slice], lw=0.5, color='C0')
@@ -145,13 +156,13 @@ def plot_rays_map(rays_maps, save_str=None, outdir='', rays_keys=range(3), paddi
     ax.set_aspect('equal')
     if save_str:
         # ax.set_title(save_str)
-        fig.savefig(os.path.join(outdir, f'{save_str}_rays_map.pdf'))
+        fig.savefig(os.path.join(outdir, f'{save_str}_rays_map.png'), dpi=300)
     # except:
     #     raise
     #     print('no ray map possible')
         
 
-def plot_image(x, y, save_str=None, outdir='None', padding = 70, pixel_size=0.05, norm='log', cmap='viridis'):
+def plot_image(x, y, save_str=None, outdir='None', padding = 70, pixel_size=0.05, norm='log', cmap='viridis', overtitle=None):
     """
     Plots the image of the telescope on the detector.
     
@@ -181,6 +192,8 @@ def plot_image(x, y, save_str=None, outdir='None', padding = 70, pixel_size=0.05
     ax.set_xlabel('x [mm]')
     ax.set_ylabel('y [mm]')
     ax.set_aspect('equal')
+    if overtitle:
+        ax.set_title(overtitle)
     if save_str:
         fig.savefig(os.path.join(outdir, f'{save_str}_image.png'), dpi=300)
 

@@ -246,7 +246,7 @@ class parabola_dataclass:
     
     def __init__(self, R0, theta, z_low, z_up):
         from intersection import generate_parabola_intersection_function
-        assert_array_1d(R0, theta, z_low, z_up)
+        # assert_array_1d(R0, theta, z_low, z_up)
         self.equation_x, self.equation_y, self.equation = generate_Wolter_parabola(R0=R0, theta=theta)
         self.intersection_function = generate_parabola_intersection_function(R0=R0, 
                                                     theta=theta, z_low=z_low, z_up=z_up)
@@ -290,7 +290,7 @@ class iperbola_dataclass:
     """
     def __init__(self, R0, beta, theta, f0, z_low, z_up):
         from intersection import generate_iperbola_intersection_function
-        assert_array_1d(R0, beta, theta, f0, z_low, z_up)
+        # assert_array_1d(R0, beta, theta, f0, z_low, z_up)
         self.equation_x, self.equation_y, self.equation = generate_Wolter_iperbola(R0=R0, beta=beta, theta=theta, f0=f0)
         self.intersection_function = generate_iperbola_intersection_function(R0=R0, 
                                    beta=beta, theta=theta, f0=f0, z_low=z_low, z_up=z_up)

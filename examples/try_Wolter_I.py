@@ -22,7 +22,7 @@ except:
     path_erosita = '../xJtracing/data/eROSITA_design_UNCERTAIN.mms'
 # -
 
-off_axis_angle_deg, pa_deg = 0.1, 0
+off_axis_angle_deg, pa_deg = 0, 0
 
 # +
 tab_eRosita = pd.read_csv(path_erosita, sep='\s+')
@@ -40,28 +40,39 @@ L = 150
 L1 = np.repeat(L, radii_max.size)
 inner_mirror = True
 telescope_pars = {'radii_parabola':radii_max, 'radii_center':radii_c, 'radii_center_inner':r_inner, 
-        'L1s':L1, 'f0':focal_length, 'inner_mirror':inner_mirror}
+        'L1s':L1, 'f0':focal_length, 'best_focal_plane':focal_length, 'inner_mirror':inner_mirror}
 
-
-# + active=""
-# telescope_pars = generator_f_wolterI_auto(R_initial=35, squared_size=220, f0=2500, L=150, thickness=0.35, inner_mirror=True)
 # -
+
 
 telescope_pars
 
 Wolter_I_out = simulate_a_WolterI(off_axis_angle_deg, pa_deg, telescope_pars,  
                                   material_nk_files_list=[Au_path], 
-                        d_list=[], rugosity_hew=False, optimize_focal_plane=True, 
-                                  plot_tracing=True, rays_in_mm2=10
+                        d_list=[], 
+                                  rugosity_hew=False, 
+                                  # rugosity_hew=20/2/3600*np.pi/180, 
+                                  optimize_focal_plane=False, 
+                                  plot_tracing=False, rays_in_mm2=20
+                                  # ,which_rays_to_output = ["Failed all reflections", "Reflect only iperbola", "Reflect only parabola", "Double reflected"]
+                                  # ,which_rays_to_output = ["Failed all reflections"]
                                  )
 
 Wolter_I_out
 
 fig, ax = plt.subplots()
-ax.hist2d(Wolter_I_out['x'], Wolter_I_out['y'], np.arange(-30,30,0.01))
+ax.hist2d(Wolter_I_out['x'], Wolter_I_out['y'], np.arange(-100,100, 1), norm='log', cmap='viridis')
+0
 
 fig, ax = plt.subplots()
 ax.plot(Wolter_I_out['x'], Wolter_I_out['y'], '.')
 ax.set_aspect('equal')
+
+fig, ax = plt.subplots()
+for i in range(54):
+    aaa = Wolter_I_out['incidence_angles'][i]
+    
+    ax.hist(aaa[:,:,:].flatten()*180/np.pi, bins=np.linspace(-2, 2, 20), alpha=0.5)
+    ax.set_xlabel(f'Angles [deg]')
 
 plt.show()

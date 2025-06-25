@@ -6,5 +6,5 @@ setup(
     author='John Rankin',
     author_email='john.rankin@inaf.it',
     url='https://github.com/astrojohnrankin/tracing_software',
-    packages=find_packages(include=['xJtracing'])
+    packages=find_packages(include=['xJtracing', 'library_test'])
 )

@@ -10,7 +10,7 @@ from xJtracing.tracing_utils import assert_single_number, assert_array_1d
 
 def create_circular_corona_of_rays(angle_off_axis, 
                                    rmin, rmax,
-                                   z0, rays_in_mm2=10, energy=1, distribute_in_field_radius=False, pa_angle=0):
+                                   z0, rays_in_mm2=10, energy=1, pa_angle=0):
     """
     Generates rays randomly distribued in a circular corona.
 
@@ -20,7 +20,7 @@ def create_circular_corona_of_rays(angle_off_axis,
         Polar angle of source.
     pa_angle: float
         Position angle of source.
-    rmin, rmax: array of float
+    rmin, rmax: float
         Radii of each circular corona.
     z0: float
         z coordinate of where rays start, should coincide with upper aperture of telescope.
@@ -28,8 +28,6 @@ def create_circular_corona_of_rays(angle_off_axis,
         Density of rays.
     energy: float
         Energy, currently can only be monochromatic.
-    distribute_in_field_radius: float
-        if not False, angle_off_axis is ignored and rays are distributed over a circular region of radius distribute_in_field_radius.
 
     Notes
     -----
@@ -44,24 +42,18 @@ def create_circular_corona_of_rays(angle_off_axis,
     rmin_2d = np.tile(rmin, [n_rays.max(), 1]) #2d [n_rays_max, n_configurations]?
     rmax_2d = np.tile(rmax, [n_rays.max(), 1]) #2d [n_rays_max, n_configurations]?
     
-    r_random = np.sqrt(np.random.uniform(rmin_2d**2, rmax_2d**2, rays_array_shape)) #2d [n_rays_max, n_configurations]
+    r_random = np.sqrt(np.random.uniform(rmin_2d**2, rmax_2d**2, rays_array_shape))
     alpha_random = np.random.uniform(0, 2*np.pi, rays_array_shape)
     x_randoms = r_random*np.cos(alpha_random)
     y_randoms = r_random*np.sin(alpha_random)
 
-    if distribute_in_field_radius: #mi sa che questa parte è sbagliata
-        rho =  np.random.triangular(0, distribute_in_field_radius, distribute_in_field_radius, rays_array_shape)
-        theta = np.random.uniform(0, 2*np.pi, rays_array_shape)
-    else:
-        rho = np.tile(angle_off_axis, rays_array_shape)
-        theta = np.tile(pa_angle, rays_array_shape)
+    rho = np.tile(angle_off_axis, rays_array_shape)
+    theta = np.tile(pa_angle, rays_array_shape)
     
     rays = create_ray(rho, theta, 
-                    x_randoms, y_randoms, z0=np.tile(z0, [rays_array_shape[0], 1]), 
+                    x_randoms, y_randoms, z0=np.tile(z0, [rays_array_shape[0], 1]),
 					energy=energy,
                     area_over_Nrays = 1/rays_in_mm2)
-    for i, _n_rays in enumerate(n_rays):
-        rays.delete_ray[_n_rays+1:, i] += 1  #the matrix of rays has to be simmetric, but the outer shells have more rays            
     return rays
 
 

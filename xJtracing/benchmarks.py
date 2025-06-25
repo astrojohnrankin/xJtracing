@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import matplotlib.pyplot as plt
 
 def half_energy_diameter(x, y, f0=None, x_center=None, y_center=None):
     """
@@ -56,7 +57,7 @@ def bins_from_data(x, y, increment=0.01):
     return [np.arange(x.min(), x.max(), increment), np.arange(y.min(), y.max(), increment)]
 
 
-def find_max_xy_from_hist(x, y, bins_function=bins_around_mean, **bins_kwargs):
+def find_max_xy_from_hist(x, y, bins_function=bins_around_mean, debug_plot=False, **bins_kwargs):
     """
     Finds the center of an image using the brighest pixel of an histogram.
     
@@ -78,6 +79,11 @@ def find_max_xy_from_hist(x, y, bins_function=bins_around_mean, **bins_kwargs):
     maxx, maxy = np.where(h==h.max())
     x_center = x_edgs[maxx[0]]
     y_center = y_edgs[maxy[0]]
+    if debug_plot:
+        fig, ax = plt.subplots()
+        ax.hist2d(x, y, bins = bins_function(x, y, **bins_kwargs), norm='log')
+        ax.plot(x_center, y_center, '+', color='red')
+        ax.set_title('Max x y from hist debugging')
     return x_center, y_center
 
 
@@ -127,7 +133,7 @@ def filter_2d_using_hist(x, y, x_ctr1, y_ctr1):
     return np.logical_and.reduce(list(map(filter_using_hist, [x, y], [x_ctr1, y_ctr1])))
 
 
-def hew_Lobster(rays_input, radius):
+def hew_Lobster(rays_input, radius, **kwargs):
     """
     Half energy width using the cross thickness.
 
@@ -141,7 +147,7 @@ def hew_Lobster(rays_input, radius):
     rays_maps = copy.deepcopy(rays_input)
     x, y = rays_maps['x']*mm_to_arcsec(radius), rays_maps['y']*mm_to_arcsec(radius)
     
-    x_ctr1, y_ctr1 = find_max_xy_from_hist(x, y, bins_function=bins_from_data, increment=1)
+    x_ctr1, y_ctr1 = find_max_xy_from_hist(x, y, bins_function=bins_from_data, increment=1, **kwargs)
 
     condition = filter_2d_using_hist(x, y, x_ctr1, y_ctr1)
     x_center_new = x[condition].mean()
@@ -161,8 +167,9 @@ def cross_rays_fractions(rays_input, x_center, y_center):
         Coordinates of the center.
     """
     rays_maps = copy.deepcopy(rays_input)
-    nevents = rays_maps['total']['x'].size
+#     nevents = rays_maps['total']['x'].size
     
+    rays0 = rays_maps[0]['x'].size
     try:
         rays1 = rays_maps[1]['x'].size
         rays1_x = rays_maps[1]['x']
@@ -171,11 +178,12 @@ def cross_rays_fractions(rays_input, x_center, y_center):
         rays1 = rays_maps['1up']['x'].size + rays_maps['1down']['x'].size
         rays1_x = np.append(rays_maps['1up']['x'], rays_maps['1down']['x'])
         rays1_y = np.append(rays_maps['1up']['y'], rays_maps['1down']['y'])
+    nevents = rays0 + rays1 + rays_maps[2]['x'].size
     
     cloud_mask =       (rays_maps[2]['x'] - x_center)**2 + (rays_maps[2]['y'] - y_center)**2 > 5**2
     center_only_mask = (rays_maps[2]['x'] - x_center)**2 + (rays_maps[2]['y'] - y_center)**2 < 5**2
     
-    return {'fraction0':rays_maps[0]['x'].size/nevents,
+    return {'fraction0':rays0/nevents,
             'fraction1':rays1/nevents,
             'fraction2':rays_maps[2]['x'].size/nevents, 
             'fraction_center': rays_maps[2]['x'][center_only_mask].size/nevents,
@@ -198,6 +206,10 @@ def all_hew_info_from_cross(rays_maps, radius):
     dict_out = cross_rays_fractions(rays_maps, x_center, y_center)
     
     dict_out['hew'] = hew
+    
+#     frac_per_aeff_clouds = (dict_out['fraction1'] + dict_out['fraction_center']) / (dict_out['fraction1'] + dict_out['fraction2'])
+#     dict_out['A_eff_without_clouds'] = rays_maps['total']['A_eff'] * frac_per_aeff_clouds #da testare prima di attivare
+    
     return dict_out
 
 

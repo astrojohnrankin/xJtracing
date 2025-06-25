@@ -408,54 +408,65 @@ def create_image(e, x_0, f0):
     x_det, y_det, z_det: array_like
         Coordinates of points on the detector.
     """
-    rays_shape = e[0].shape
-    # detector_surface_z = lambda x, y: np.tile(-f0, x.shape)
-    f0s = np.tile(-f0, [rays_shape[0], 1])
-
-    ray_direction_x, ray_direction_y = generate_ray_direction_equations(e, x_0)
-    x_det, y_det, z_det = ray_direction_x(-f0), ray_direction_y(-f0), f0s
-        
+    
+    if len(e[0].shape) == 2: #in this case e is [e1, e2, e3], each 2d
+        rays_shape = e[0].shape
+        f0s = np.tile(-f0, [rays_shape[0], 1])
+        ray_direction_x, ray_direction_y = generate_ray_direction_equations(e, x_0)
+        x_det, y_det, z_det = ray_direction_x(-f0), ray_direction_y(-f0), f0s
+    elif len(e[0].shape) == 1: #in this case e is [e1, e2, e3], each 1d
+        f0s = np.tile(-f0, e[0].size)
+        ray_direction_x, ray_direction_y = generate_ray_direction_equations(e, x_0)
+        x_det, y_det, z_det = ray_direction_x(-f0), ray_direction_y(-f0), f0s
+    elif len(e[0][0].shape) == 1: #in this case e is list of [e1, e2, e3], each 1d
+        def get_xyz_(shell_i):
+            f0s = np.tile(-f0, e[shell_i][0].shape)
+            ray_direction_x, ray_direction_y = generate_ray_direction_equations(e[shell_i], x_0[shell_i])
+            return ray_direction_x(-f0), ray_direction_y(-f0), f0s
+        xyz = list(map(get_xyz_, range(len(e))))
+        x_, y_, z_ = zip(*xyz)
+        x_det, y_det, z_det = list(x_), list(y_), list(z_)
     return x_det, y_det, z_det
 
 
-def find_best_focal_plane(reflected_rays_passed, f0, f0_delta, precision=0.1, plot=False):
-    """
-    Finds the focal plane that minizes the hew for the given off_axis_angle_deg.
+# def find_best_focal_plane(e, x_0, f0, f0_delta, precision=0.1, plot=False):
+#     """
+#     Finds the focal plane that minizes the hew for the given off_axis_angle_deg.
 
-    Parameters
-    ----------
-    reflected_rays_passed: instance of rays.rays_dataclass
-        rays that go to the detector.
-    f0: float
-        Initial guess of focal distance.
-    f0_delta: float
-        The best focal distance is searched for in the interval f0 +- f0_delta.
-    precision: float
-        Precision of computed focal values.
-    plot: bool
-        Debugging plot.
-    """
+#     Parameters
+#     ----------
+#     e, x_0: tuple of 3 array_like
+#         Rays parameters, see rays.generate_ray_direction_equations.
+#     f0: float
+#         Initial guess of focal distance.
+#     f0_delta: float
+#         The best focal distance is searched for in the interval f0 +- f0_delta.
+#     precision: float
+#         Precision of computed focal values.
+#     plot: bool
+#         Debugging plot.
+#     """
 
-    def hew_at_this_f_(focal_plane):
-        x_det, y_det, z_det = create_image(reflected_rays_passed.e, reflected_rays_passed.x0, focal_plane)
-        x_center, y_center = x_det.mean(), y_det.mean()
-        return half_energy_diameter(x_det, y_det, focal_plane, x_center, y_center)
+#     def hew_at_this_f_(focal_plane):
+#         x_det, y_det, z_det = create_image(e, x_0, focal_plane)
+#         x_center, y_center = x_det.mean(), y_det.mean()
+#         return half_energy_diameter(x_det, y_det, focal_plane, x_center, y_center)
 
-    fs = np.arange(f0 - f0_delta, f0 + f0_delta, precision)
-    hews = np.array(list(map(hew_at_this_f_, fs)))
+#     fs = np.arange(f0 - f0_delta, f0 + f0_delta, precision)
+#     hews = np.array(list(map(hew_at_this_f_, fs)))
 
-    try:
-        new_f = fs[hews==hews.min()][0]
-    except:
-        print('failed focal_plane adjustment')
-        new_f = f0
+#     try:
+#         new_f = fs[hews==hews.min()][0]
+#     except:
+#         print('failed focal_plane adjustment')
+#         new_f = f0
         
-    if plot:
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        ax.plot(fs, hews)
-        ax.axvline(f0, color='red')
-        ax.axvline(new_f, color='green')
+#     if plot:
+#         import matplotlib.pyplot as plt
+#         fig, ax = plt.subplots()
+#         ax.plot(fs, hews)
+#         ax.axvline(f0, color='red')
+#         ax.axvline(new_f, color='green')
     
-    return new_f
+#     return new_f
     

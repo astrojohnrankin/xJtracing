@@ -3,11 +3,22 @@ import yaml
 
 def assert_single_number(*args):
     for arg in args:
-        assert isinstance(arg, (int, float)), print('wrong array shape', arg)
+        assert isinstance(arg, (int, float, np.int64)), print('wrong array shape', arg)
         
 def assert_array_1d(*args):
     for arg in args:
         assert len(arg.shape)==1, print('wrong array shape', arg)
+
+def assert_array_1d_single(*args):
+    for arg in args:
+        if isinstance(arg, (int, float, np.int64)):
+            pass
+        elif len(arg.shape)==1:
+            assert arg.shape[0] == 1
+        else:
+            print(arg, type(arg))
+            print(arg.shape)
+            raise
 
 def assert_array_2d(*args):
     for arg in args:

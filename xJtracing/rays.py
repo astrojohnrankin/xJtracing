@@ -114,10 +114,11 @@ class rays_dataclass:
    e: tuple
    x0: tuple
    energy: float
-   survival: float
+   survival: float #this is used to mark if rays are absorbed by efficiency of reflection, but for geometrical intersection the delete_ray is (should be) used
    delete_ray: float
    area_over_Nrays: float
    geometric_area: float
+   incidence_angles: float
     
 
 def create_ray(rho, theta, x0, y0, z0, energy, area_over_Nrays=None, geometric_area=None):
@@ -145,8 +146,9 @@ def create_ray(rho, theta, x0, y0, z0, energy, area_over_Nrays=None, geometric_a
     e = ray_versor(rho, theta)
     survival = np.tile(True, rho.shape) # Before interacting the ray has passed (maybe through empty space or something)
     delete_ray = np.zeros(rho.shape, dtype=np.uint8) # An array which can be used in the end to mask rays that we select for all the many reasons
+    incidence_angles = np.zeros((*rho.shape, 1), dtype=np.float32) * np.nan # It will list all incidence angles the ray has gone through, the first elements for non reflected rays has value nan
     return rays_dataclass(e=e, x0=np.array([x0, y0, z0]), energy=energy, survival=survival, 
-                                   delete_ray=delete_ray, area_over_Nrays=area_over_Nrays, geometric_area=geometric_area)
+                                   delete_ray=delete_ray, area_over_Nrays=area_over_Nrays, geometric_area=geometric_area, incidence_angles=incidence_angles)
     
 
 def find_if_ray_was_reflected(inc_angle, energy, material_nk_file): 
@@ -223,7 +225,16 @@ def reflect_ray_starting_from_mirror(ray_original, mirror, material_nk_files_lis
     x_new = np.where(exists_intersection, x_intersect, ray_original.x0[0])
     y_new = np.where(exists_intersection, y_intersect, ray_original.x0[1])
     z_new = np.where(exists_intersection, z_intersect, ray_original.x0[2])
-    new_rays = dc_replace(ray, e=e_out, x0=np.array([x_new, y_new, z_new]), survival=survival)
+
+    new_incidence_angle_expanded = np.expand_dims(incidence_angle, axis=-1)
+    try:
+        incidence_angles_concatenation = np.concatenate([ray.incidence_angles, new_incidence_angle_expanded], axis=-1)
+    except:
+        incidence_angles_concatenation = None
+        
+    new_rays = dc_replace(ray, e=e_out, x0=np.array([x_new, y_new, z_new]), survival=survival, 
+                              incidence_angles=incidence_angles_concatenation
+                             )
 
 
     if ax_x:
@@ -250,10 +261,17 @@ def delete_rays_marked_for_deletion(ray_original):
     Deletes rays that have been marked for deletion by the mark_rays_for_non_deletion function
     """
     ray = copy.deepcopy(ray_original)
-    mask = np.where(ray.delete_ray==0, True, False)
+    delete_where = ray.delete_ray==0
+    mask = np.where(delete_where, True, False)
+    try:
+        deleted_inc_angles = np.where(np.repeat(delete_where[:, :, np.newaxis], ray.incidence_angles.shape[-1], axis=2)
+                                               , ray.incidence_angles, np.nan)
+    except:
+        deleted_inc_angles = None
     return dc_replace(ray, e=np.array([_e[mask] for _e in ray.e]), 
                           x0=np.array([_x0[mask] for _x0 in ray.x0]), 
-                    survival=ray.survival[mask], delete_ray=ray.delete_ray[mask])
+                    survival=ray.survival[mask], delete_ray=ray.delete_ray[mask],
+                     incidence_angles=deleted_inc_angles)
 
 
 def rotate_ray_dataclass(ray_original, theta):
@@ -326,21 +344,9 @@ def tilt_rays(rays, tild_deg, tilt_deg_pa, inverse=False, z_rotation=None, xshif
         # 2. gli x0 di sopra vengono ruotati con tilt_rays_vector!!! con inverso
         x_0_bottom_rot = tilt_rays_vector(x_0_bottom, tild_deg, tilt_deg_pa, inverse=inverse)
     
-        # 3. i raggi ruotati vengon fatti passare per i punti trovari sopra
+        # 3. i raggi ruotati vengon fatti passare per i punti trovati sopra
         x_det, y_det, z_det = x_0_bottom_rot[0], x_0_bottom_rot[1], x_0_bottom_rot[2]
 
-        
-    #     #raggi in uscita a 
-    #     pre_ray_direction_x, pre_ray_direction_y = generate_ray_direction_equations(rays.e, rays.x0)
-    #     x0_bottom = pre_ray_direction_x(exit_z)
-    #     y0_bottom = pre_ray_direction_y(exit_z)
-    #     # import pdb; pdb.set_trace()
-    #     z0_bottom = np.repeat(exit_z[np.newaxis, :], x0_bottom.shape[0], axis=0)
-    #     # import pdb; pdb.set_trace()
-    #     ray_direction_x, ray_direction_y = generate_ray_direction_equations(rotated_e, np.array([x0_bottom, y0_bottom, z0_bottom]))
-    #     x_det, y_det = ray_direction_x(z_rotation), ray_direction_y(z_rotation)
-    #     # z_det = np.tile(z_rotation, x_det.shape)
-    #     z_det = np.repeat(z_rotation[np.newaxis, :], x_det.shape[0], axis=0)
     else:
         x_det, y_det, z_det = rays.x0[0], rays.x0[1], rays.x0[2]
         

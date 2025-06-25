@@ -205,18 +205,18 @@ def multilayers_from_receipt(high_Z_path, low_Z_path, bottom_path, N, a, b, c, G
     -----
     The total tickness of each bi-layer is given by
         d(k) = a/(b+k)^c
-    and the ticknesses of the two alternating layers are then
+    and the thicknesses of the two alternating layers are then
         d_high_Z = G*d(k)
         d_low_Z = (1 - G)*d(k)
     k=1 indicates the topmost layer.
     """
-    def tickensses(k):
+    def thicknesses(k):
         d = a/(b + k + 1)**c
         d_highZ = G*d
         d_lowZ = (1 - G)*d
         return d_lowZ, d_highZ
         
-    d_list = list(itertools.chain.from_iterable(tickensses(i) for i in range(N)))
+    d_list = list(itertools.chain.from_iterable(thicknesses(i) for i in range(N)))
     
     material_nk_files_list = [
         None,

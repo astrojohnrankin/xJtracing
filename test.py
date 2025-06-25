@@ -77,7 +77,7 @@ class TestWolter(unittest.TestCase):
         e_reflected2 = reflect_ray(e_reflected1, n_normal2, x_intersect, y_intersect, z_intersect)
         e_reflected2_tuple_of_array = list(map(lambda _item: np.array([_item]), e_reflected2))
         x_det, y_det, z_det = create_image(e_reflected2_tuple_of_array, (x_intersect, y_intersect, z_intersect), 1600)
-        np.testing.assert_almost_equal((x_det, y_det, z_det[0]), 
+        np.testing.assert_almost_equal((x_det, y_det, z_det), 
                                       (np.array([-0.15772045]), np.array([-0.02780149]), np.array([-1600])))
 
 
